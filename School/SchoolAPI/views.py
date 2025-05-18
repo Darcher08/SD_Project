@@ -8,8 +8,12 @@ from rest_framework.response import Response
 from rest_framework.decorators import (
     api_view,
     permission_classes,
+    authentication_classes,
     action,
 )
+from rest_framework.permissions import AllowAny
+from rest_framework.authentication import TokenAuthentication
+
 from rest_framework import (
     status,
     viewsets,
@@ -19,8 +23,12 @@ from rest_framework.exceptions import (
     MethodNotAllowed,
 )
 
+from django.contrib.auth.models import User, Group
+
 from .serializers import *
 from .models import *
+
+from .decorators import *
 
 """
 
@@ -34,6 +42,11 @@ viewset crea las siguientes rutas:
 """
 
 class Detector:
+    """
+    Clase base que proporciona funcionalidades de verificación para ViewSets.
+    Incluye verificación automática de grupos en el método dispatch.
+    """
+    
     def camposVacios(self, camposRequeridos, data):
 
         camposVacios = [ campo for campo in camposRequeridos if not data.get(campo)]
@@ -45,42 +58,179 @@ class Detector:
             )    
         return None
     
-class DepartamentoViewSet(viewsets.ModelViewSet):
+    #! APLICAR EL VERIFICADOR A CADA UNO LOS ENDPOINTS
+
+    def verificarGrupos(self, user, gruposObjetivo, permitir_admin=True):
+
+        """
+        Verifica si el usuario pertenece a alguno de los grupos objetivo o si es
+        administrador.
+
+        Returns: 
+        None si tiene acceso, Responde con error si no tiene acceso
+        """
+
+        if permitir_admin and (user.is_superuser or user.is_staff):
+            return None
+        
+        if gruposObjetivo and not user.groups.filter(name__in=gruposObjetivo).exists():
+            return Response(
+                {"error": f"Usted no tiene permitido acceder o realizar acciones en endpoint"},
+                status=status.HTTP_403_FORBIDDEN
+            ) 
+        return None
+    
+class DepartamentoViewSet(viewsets.ModelViewSet, Detector):
     queryset = Departamento.objects.all()
     serializer_class = DepartamentoSerializer
+    #METODOS_PROTEGIDOS = ['create', 'update', 'partial_update', 'destroy']
+    #GRUPOS_PERMITIDOS = ['profesorAdmin-grupo', 'admin-grupo']
 
-class CarreraViewSet(viewsets.ModelViewSet):
+    def create(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        return super().create(request, *args, **kwargs)
+    
+    def update(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().update(request, *args, **kwargs)
+    
+    def partial_update(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().partial_update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().destroy(request, *args, **kwargs)
+
+class CarreraViewSet(Detector, viewsets.ModelViewSet):
     queryset = Carrera.objects.all()
     serializer_class = CarreraSerializer
+    #METODOS_PROTEGIDOS = ['create', 'update', 'partial_update', 'destroy']
+    #GRUPOS_PERMITIDOS = ['profesorAdmin-grupo', 'admin-grupo']
+
+    def create(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        return super().create(request, *args, **kwargs)
+    
+    def update(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().update(request, *args, **kwargs)
+    
+    def partial_update(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().partial_update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().destroy(request, *args, **kwargs)
 
 class ProfesoresViewSet(viewsets.ModelViewSet, Detector):
     queryset = Profesor.objects.all()
     serializer_class = ProfesorSerializer
 
+    #METODOS_PROTEGIDOS = ['create', 'update', 'partial_update', 'destroy']
+    #GRUPOS_PERMITIDOS = ['profesorAdmin-grupo', 'admin-grupo']
+
     #! para que los profesores puedan ser registrados en el sistema
 
     def create(self, request, *args, **kwargs):
-
-        """
-        Campos que se tomaran en consideracion durante la crecion 
-        de los profesores: 
-        Json (del request)
-
-        nombreUsuario (str),
-        password (str),
-        
-        cedulaProfesional(str),
-
-        nombres (str),
-        apellidoPaterno (str), 
-        apellidoMaterno (str),
-
-        departamento (str), 
-        salario (float)
-
-        """
-
         try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+
             #! Manejo de malos request
             if request.method != 'POST':
                 raise MethodNotAllowed(str(request.method))
@@ -110,7 +260,7 @@ class ProfesoresViewSet(viewsets.ModelViewSet, Detector):
 
             #! Verificar que no haya ningun campo vacio
 
-            camposRequeridos = ['cedulaProfesional', 'email', 'nombres', 'apellidoPaterno', 'apellidoMaterno', 'departamento', 'salario']
+            camposRequeridos = ['cedula_profesional', 'email', 'nombres', 'apellidoPaterno', 'apellidoMaterno', 'departamento', 'salario']
             responseError = self.camposVacios(camposRequeridos, data)
             if responseError:
                  return responseError
@@ -121,7 +271,7 @@ class ProfesoresViewSet(viewsets.ModelViewSet, Detector):
             apellidoPat = data.get('apellidoPaterno')
             apellidoMat = data.get('apellidoMaterno')
             departamento  = data.get('departamento')
-            cedulaProfesional = data.get('cedulaProfesional')
+            cedulaProfesional = data.get('cedula_profesional')
             email = data.get('email')
             salario = data.get('salario')
 
@@ -139,7 +289,7 @@ class ProfesoresViewSet(viewsets.ModelViewSet, Detector):
                 'apellidoPaterno': apellidoPat,
                 'apellidoMaterno': apellidoMat,
                 'departamento': departamento,
-                'cedulaProfesional': cedulaProfesional,
+                'cedula_profesional': cedulaProfesional,
                 'salario': salario
 
             }
@@ -147,6 +297,11 @@ class ProfesoresViewSet(viewsets.ModelViewSet, Detector):
             serializer = self.get_serializer(data=profesorData) #mejor practica
             if serializer.is_valid():
                 serializer.save()
+
+                #agregar al profesor al grupo de profesores generales que es: profesores-grupo
+                grupo = Group.objects.get(name='profesores-grupo')
+                user.groups.add(grupo)
+
                 return Response(
                     {"message": f"Registro del usuario {nmbUsuario} realizado con exito"},
                     status=status.HTTP_201_CREATED
@@ -176,14 +331,108 @@ class ProfesoresViewSet(viewsets.ModelViewSet, Detector):
                 {"error" : f"Ha ocurrido un error inesperado {e}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
+    def update(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().update(request, *args, **kwargs)
+    
+    def partial_update(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().partial_update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().destroy(request, *args, **kwargs)
+    
+    @action(detail=True, methods=['post'], url_path='agregarProfeAdmin', url_name='agregarProfesorAdmin')
+    def agregarProfeAdmin(self, request, pk=None):
+
+        user = request.user
+        verificadorGrupo = self.verificarGrupos(user, ['admin-grupo', 'profesorAdmin-grupo'])
+        
+        profesorID = pk
+        profesorObj = User.objects.all().filter(id=profesorID)
+
+        if verificadorGrupo:
+            return verificadorGrupo
+
+        #! Manejo de malos request
+        if request.method != 'POST':
+            raise MethodNotAllowed(str(request.method))
+
+
+        #! Manejo del request
+        profesorID = pk
+        try:
+            # Obtener el profesor como un objeto único usando get() en lugar de filter()
+            profesorObj = User.objects.get(id=profesorID)
+            
+            # Agregar al profesor al grupo de profesores administradores
+            grupo = Group.objects.get(name='profesorAdmin-grupo')
+            profesorObj.groups.add(grupo)
+            
+            return Response({
+                'status': 'success',
+                'message': f'El profesor con ID {profesorID} ha sido agregado como administrador correctamente.'
+            }, status=status.HTTP_200_OK)
+            
+        except User.DoesNotExist:
+            return Response({
+                'status': 'error',
+                'message': f'No se encontró ningún usuario con el ID {profesorID}.'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Group.DoesNotExist:
+            return Response({
+                'status': 'error',
+                'message': 'El grupo profesorAdmin-grupo no existe.'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class AlumnosViewSet(viewsets.ModelViewSet, Detector):
     queryset = Alumno.objects.all()
     serializer_class = AlumnoSerializer
-
-    #! para que los alumnos se puedan inscribir a la escuela
-
+    #METODOS_PROTEGIDOS = ['create', 'update', 'partial_update', 'destroy']
+    #GRUPOS_PERMITIDOS = ['profesorAdmin-grupo', 'admin-grupo']
+    
+    @authentication_classes([])
+    @permission_classes([AllowAny])
     def create(self, request, *args, **kwargs):
 
         """
@@ -202,6 +451,8 @@ class AlumnosViewSet(viewsets.ModelViewSet, Detector):
 
         #verificar el nombre de usuario y password antes de proceder
         try:
+
+            # No se hace verificacion ya que cualquier persona se puede inscribir como alumno
             #! Manejo de malos request
             if request.method != 'POST':
                 raise MethodNotAllowed(str(request.method))
@@ -253,6 +504,7 @@ class AlumnosViewSet(viewsets.ModelViewSet, Detector):
                 email=email
             )
 
+
             #*Prepara los datos del alumno
             alumnoData = {
                 'user': user.id,
@@ -267,6 +519,12 @@ class AlumnosViewSet(viewsets.ModelViewSet, Detector):
             serializer = self.get_serializer(data=alumnoData) #mejor practica
             if serializer.is_valid():
                 serializer.save()
+                
+                #Agregar al grupo de alumnos (--hasta este punto aseguramos que la creacion del usuario fue exitosa)
+                #! Dado la magnitud del proyecto, la creacion de grupos es manual
+
+                grupo = Group.objects.get(name='alumnos-grupo')
+                user.groups.add(grupo)
                 return Response(
                     {"message": f"Registro del usuario {nmbUsuario} realizado con exito"},
                     status=status.HTTP_201_CREATED
@@ -295,11 +553,57 @@ class AlumnosViewSet(viewsets.ModelViewSet, Detector):
             return Response({"error": str(e)}, 
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)       
 
+    def update(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
 
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().update(request, *args, **kwargs)
     
+    def partial_update(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().partial_update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().destroy(request, *args, **kwargs)
+
+
 class MateriaViewSet(viewsets.ModelViewSet, Detector):
     queryset = Materia.objects.all()
     serializer_class = MateriaSerializer
+    #METODOS_PROTEGIDOS = ['create', 'update', 'partial_update', 'destroy']
+    #GRUPOS_PERMITIDOS = ['profesorAdmin-grupo', 'admin-grupo']
 
     # agregar el post modificado
 
@@ -315,6 +619,13 @@ class MateriaViewSet(viewsets.ModelViewSet, Detector):
         """
         
         try:
+            #hacer la verificacion de que solo admins pueden crear materias
+
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+            
+            if verificadorGrupo:
+                return verificadorGrupo
             
             if request.method != 'POST':
                 raise MethodNotAllowed(str(request.method))
@@ -348,14 +659,66 @@ class MateriaViewSet(viewsets.ModelViewSet, Detector):
                 {"Error": f"El metodo {e} que se esta intentado utilizar no esta permitido"},
                 status=status.HTTP_405_METHOD_NOT_ALLOWED
             )
+    
+    def update(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
 
-class Curso(viewsets.ModelViewSet, Detector):
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().update(request, *args, **kwargs)
+    
+    def partial_update(self, request, *args, **kwargs)  :
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().partial_update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().destroy(request, *args, **kwargs)
+    
+class CursoViewSet(viewsets.ModelViewSet, Detector):
     queryset = Curso.objects.all()
     serializer_class = CursoSerializer
+    #METODOS_PROTEGIDOS = ['create', 'update', 'partial_update', 'destroy']
+    #GRUPOS_PERMITIDOS = ['profesorAdmin-grupo', 'admin-grupo']
 
     def create(self, request, *args, **kwargs):
-
         try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+            
+            if verificadorGrupo:
+                return verificadorGrupo
+
             #! Manejo de metodo
             if request.method != 'POST':
                 raise MethodNotAllowed(str(request.method))
@@ -384,10 +747,7 @@ class Curso(viewsets.ModelViewSet, Detector):
                     {"error": "La materia que fue ingresada no existe. Verifique sus entradas."}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
-
-
-
+        
             #*Prepara los datos del alumno
             cursoData = {
                 'materia': data.get('materia'),
@@ -428,10 +788,56 @@ class Curso(viewsets.ModelViewSet, Detector):
                 {"error" : f"Ha ocurrido un error inesperado {e}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
+    def update(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
 
-class Inscripcion(viewsets.ModelViewSet, Detector):
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().update(request, *args, **kwargs)
+    
+    def partial_update(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().partial_update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().destroy(request, *args, **kwargs)
+    
+class InscripcionViewSet(viewsets.ModelViewSet, Detector):
     queryset = Inscripcion.objects.all()
     serializer_class = InscripcionSerializer
+    #METODOS_PROTEGIDOS = ['update', 'partial_update', 'destroy']
+    #GRUPOS_PERMITIDOS = ['profesorAdmin-grupo', 'admin-grupo']
 
     def create(self, request, *args, **kwargs):
 
@@ -443,6 +849,9 @@ class Inscripcion(viewsets.ModelViewSet, Detector):
 
             #! Manejo del request
             data = request.data
+
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['alumnos-grupo'])
 
             #checar campos vacios
             campos = ['alumno','curso']
@@ -462,9 +871,11 @@ class Inscripcion(viewsets.ModelViewSet, Detector):
                     {"error": "El curso que fue ingresado no existe. Verifique sus entradas."}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
-
-
+            elif int(user.id) != int(data.get('alumno')):
+                return Response(
+                    {"error": "No se permite inscribir a otros usuarios que no sean usted mismo"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
             #*Prepara los datos del alumno
             cursoData = { 
@@ -493,18 +904,69 @@ class Inscripcion(viewsets.ModelViewSet, Detector):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
 
+    def update(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
 
-class Asistencia(viewsets.ModelViewSet):
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().update(request, *args, **kwargs)
+    
+    def partial_update(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().partial_update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().destroy(request, *args, **kwargs)
+    
+class AsistenciaViewSet(viewsets.ModelViewSet):
     queryset = Asistencia.objects.all()
     serializer_class = AsistenciaSerializer
+    #METODOS_PROTEGIDOS = ['create', 'update', 'partial_update', 'destroy']
+    #GRUPOS_PERMITIDOS = ['profesores-grupo', 'profesorAdmin-grupo', 'admin-grupo']
 
     def create(self, request, *args, **kwargs):
 
         try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesorAdmin-grupo', 'admin-grupo'])
+            
+            if verificadorGrupo:
+                return verificadorGrupo
+            
             #! Manejo de metodo
             if request.method != 'POST':
                 raise MethodNotAllowed(str(request.method))
-
 
             #! Manejo del request
             data = request.data
@@ -522,9 +984,6 @@ class Asistencia(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-
-
-
             #*Preparar los datos
             cursoData = { 
                 'inscripcion': data.get('inscripcion')
@@ -556,3 +1015,47 @@ class Asistencia(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
         
+    def update(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesores-grupo', 'profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().update(request, *args, **kwargs)
+    
+    def partial_update(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user,['profesores-grupo', 'profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().partial_update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            verificadorGrupo = self.verificarGrupos(user, ['profesores-grupo', 'profesorAdmin-grupo', 'admin-grupo'])
+
+            if verificadorGrupo:
+                return verificadorGrupo
+            
+        except Exception as e:
+            return Response(
+                {"error": f"e"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        return super().destroy(request, *args, **kwargs)

@@ -1,0 +1,119 @@
+Secuencia:
+
+1. Lo primero, seria que se identifique que los grupos: 
+    profesorAdmin-grupo,
+    profesores-grupo, 
+    alumnos-grupo,
+  esten creados antes de realizar agregados de profesores y alumnos a la db.
+
+2. Antes de crear algun tipo de instancia (alumno, profesor, etc) se espera que se 
+    conozca que campos son necesarios para su creacion.
+    2.1 Se muestra la siguiente relacion de las clases para evitar confusiones
+        Clase : Dependencia1, Dependencia2, ...
+
+        Departamento:
+        Carrera: Departamento
+        Materia: Carrera
+        Profesor: User, Departamento
+        Alumno: User, Carrera
+        Curso: Materia, Profesor
+        Inscripcion: Alumno, Curso
+        Asistencia: Inscripcion
+
+    La lista anterior ya tiene el orden adecuado que se debe seguir para crear cada clase. 
+    2.2 Formato de Json que solicita cada endpoint de creacion POST: 
+    Nota: Aunque la clase tenga mas campos algunos son seleccionados por defecto. De igual forma, 
+          se pueden modificar posteriormente con PUT o PATCH
+          urls api> localhost/school/api/ ...
+
+          departamentos/: 
+          {
+            "nombre":"",
+            "clave":""
+          }
+
+          carreras/: 
+          {
+            "nombre":"",
+            "clave":"",
+            "departamento":
+          }
+
+          materias/: 
+          {
+            "nombre":"",
+            "codigo":"",
+            "credito":"",
+            "carrera":""
+          }
+
+          profesores/:
+          {
+            "nombreUsuario": "",
+            "password": "",
+            "nombres": "",
+            "apellidoPaterno":"",
+            "apellidoMaterno":"",
+            "departamento": ,
+            "cedula_profesional": "",
+            "email":"",
+            "salario": 
+        }
+
+          alumnos/:
+          {
+            "nombreUsuario": "",
+            "password": "",
+            "nombres": "",
+            "apellidoPaterno":"",
+            "apellidoMaterno":"",
+            "curp": ,
+            "carrera": "",
+            "email":""
+          }
+
+          cursos/:
+          {
+            "materia":,
+            "profesor":,
+            "nombrePeriodo":"",
+            "grupo":"",
+            "cupoMax":,
+            "dia":"",
+            "horaInicio":"",
+            "horaFin":"",
+            "edificio":"",
+            "numeroSalon":,
+            "tipoSalon":""
+          }
+
+          inscripciones/:
+          {
+            "alumno":,
+            "curso":
+          }
+
+          asistencias/:
+          {
+            "inscripcion":"",
+            "presente": 
+          }
+
+
+3. Hacer pruebas con Insonmia para verificar la utilizabilidad de los endpoints.
+
+
+4. 
+
+python manage.py makemigrations
+python manage.py migrate 
+
+ADMIN: python manage.py createsuperuser
+
+profesorAdmin-grupo,
+profesores-grupo, 
+alumnos-grupo,
+
+para hacerlo correr 
+python manage.py runserver
+
